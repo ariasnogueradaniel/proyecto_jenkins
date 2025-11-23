@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     stages {
-        stage('Construir Imagen de Desarrollo') {
+        stage('Docker Compose Build') {
             steps {
-                script {
-                    bat "docker-compose build"
-                }
+                bat """
+                    docker-compose -f carpeta/proyectodocker/proyectodocker/docker-compose.yml build
+                """
             }
         }
     }
