@@ -1,0 +1,10 @@
+# Este archivo docker-compose construye y ejecuta la imagen de desarrollo completa.
+services:
+  dev-environment:
+    build:
+      context: .
+      dockerfile: imagen_completa.dockerfile
+    image: proyecto-docker:dev-completo
+    container_name: full-stack-env
+    tty: true
+    stdin_open: true

@@ -1,0 +1,16 @@
+pipeline {
+    agent any
+ 
+    stages {
+        stage('Construir Imagen de Desarrollo') {
+            steps {
+                script {
+                    // Este comando utiliza docker-compose para construir la imagen
+                    // definida en el servicio 'dev-environment' de tu docker-compose.yml.
+                    // Jenkins ejecutará este comando desde la raíz de tu proyecto.
+                    sh "docker-compose build"
+                }
+            }
+        }
+    }
+}
