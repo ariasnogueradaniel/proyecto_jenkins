@@ -21,7 +21,11 @@ pipeline {
             bat """
                 docker rmi -f proyecto-docker:dev-completo || echo "Imagen no existe, saltando..."
             """
+<<<<<<< HEAD
+=======
+
+>>>>>>> 3752e8bb6412875830d1cb9307d09b3b61c7ce26
             echo " Limpieza completada"
         }
     }
-}
+} 
