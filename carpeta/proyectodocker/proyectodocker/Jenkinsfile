@@ -13,7 +13,7 @@ pipeline {
 
     post {
         always {
-            echo "🧹 Limpiando contenedores e imágenes creadas por el pipeline..."
+            echo " Limpiando contenedores e imágenes creadas por el pipeline..."
 
             
             bat """
@@ -25,7 +25,7 @@ pipeline {
                 docker rmi -f proyecto-docker:dev-completo || echo "Imagen no existe, saltando..."
             """
 
-            echo "✨ Limpieza completada"
+            echo " Limpieza completada"
         }
     }
-}
+} 
