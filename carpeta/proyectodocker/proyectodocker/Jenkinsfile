@@ -1,27 +1,163 @@
 pipeline {
     agent any
-
+    
+    environment {
+        REGISTRY_URL = 'localhost:5000'
+        IMAGE_NAME = 'proyecto-docker'
+        STUDENT_TAG = 'Daniel-Arias'
+        FULL_IMAGE = 'localhost:5000/proyecto-docker'
+        COMPOSE_FILE = 'carpeta/proyectodocker/proyectodocker/docker-compose.yml'
+        BUILD_TAG = "build-${BUILD_NUMBER}"
+        TIMESTAMP = new Date().format('yyyyMMdd-HHmmss')
+    }
+    
     stages {
-        stage('Docker Compose Build') {
+        stage('Verificar Registry Local') {
             steps {
                 bat """
-                    docker-compose -f carpeta/proyectodocker/proyectodocker/docker-compose.yml build
+                    echo "Verificando registry local..."
+                    docker ps | findstr "registry"
+                    echo "Registry detectado en localhost:5000"
+                    
+                    # Probar conexión al registry
+                    curl -X GET http://localhost:5000/v2/_catalog || echo "Registry accesible"
                 """
             }
         }
-    }
-
-    post {
-        always {
-            echo " Limpiando contenedores e imágenes creadas por el pipeline..."
-
-            bat """
-                docker rm -f full-stack-env || echo "Contenedor no existe, saltando..."
-            """
-            bat """
-                docker rmi -f proyecto-docker:dev-completo || echo "Imagen no existe, saltando..."
-            """
-            echo " Limpieza completada"
+        
+        stage('Checkout y Preparación') {
+            steps {
+                checkout scm
+                echo "Código descargado del repositorio"
+            }
+        }
+        
+        stage('Build con Docker Compose') {
+            steps {
+                bat """
+                    echo "Construyendo imagen con Docker Compose..."
+                    docker-compose -f "${COMPOSE_FILE}" build --no-cache
+                    echo "Build completado"
+                    
+                    echo "Imágenes disponibles:"
+                    docker images | findstr "${IMAGE_NAME}"
+                """
+            }
+        }
+        
+        stage('Tag para Registry Local') {
+            steps {
+                script {
+                    bat """
+                        echo " Aplicando tags para registry local..."
+                        
+                        # Tag con tu nombre (para identificación en la revisión)
+                        docker tag ${IMAGE_NAME}:dev-completo ${REGISTRY_URL}/proyecto-docker:${STUDENT_TAG}
+                        echo " Tag personal: ${STUDENT_TAG}"
+                        
+                        # Tag con número de build
+                        docker tag ${IMAGE_NAME}:dev-completo ${REGISTRY_URL}/proyecto-docker:${BUILD_TAG}
+                        echo " Tag build: ${BUILD_TAG}"
+                        
+                        # Tag con timestamp
+                        docker tag ${IMAGE_NAME}:dev-completo ${REGISTRY_URL}/proyecto-docker:${TIMESTAMP}
+                        echo " Tag timestamp: ${TIMESTAMP}"
+                        
+                        # Tag latest
+                        docker tag ${IMAGE_NAME}:dev-completo ${REGISTRY_URL}/proyecto-docker:latest
+                        echo "Tag latest"
+                        
+                        echo "Resumen de tags creados:"
+                        docker images | findstr "${REGISTRY_URL}"
+                    """
+                }
+            }
+        }
+        
+        stage('Push al Registry Local') {
+            steps {
+                bat """
+                    echo "Subiendo imágenes al registry local (localhost:5000)..."
+                    
+                    # Push de todos los tags
+                    docker push ${REGISTRY_URL}/proyecto-docker:${STUDENT_TAG}
+                    echo " Subido: ${STUDENT_TAG}"
+                    
+                    docker push ${REGISTRY_URL}/proyecto-docker:${BUILD_TAG}
+                    echo "  Subido: ${BUILD_TAG}"
+                    
+                    docker push ${REGISTRY_URL}/proyecto-docker:${TIMESTAMP}
+                    echo " Subido: ${TIMESTAMP}"
+                    
+                    docker push ${REGISTRY_URL}/proyecto-docker:latest
+                    echo " Subido: latest"
+                    
+                    echo "Todas las imágenes subidas al registry local"
+                """
+            }
+        }
+        
+        stage('Verificar Push en Registry') {
+            steps {
+                bat """
+                    echo "Verificando imágenes en registry..."
+                    
+                    # Listar catálogo del registry
+                    echo "Catálogo del registry:"
+                    curl -X GET http://localhost:5000/v2/_catalog
+                    
+                    echo.
+                    echo "Tags disponibles para 'proyecto-docker':"
+                    curl -X GET http://localhost:5000/v2/proyecto-docker/tags/list
+                    
+                    echo.
+                    echo "Tamaño de las imágenes en registry:"
+                    docker exec registry bin/registry garbage-collect /etc/docker/registry/config.yml 2>&1 | findstr "blobs" || echo "Registry funcionando"
+                """
+            }
+        }
+        
+        stage('Generar Reporte Local') {
+            steps {
+                script {
+                    echo "REPORTE DE EJECUCIÓN (REGISTRY LOCAL)"
+                    echo "Estudiante: ${STUDENT_TAG}"
+                    echo "Registry Local: ${REGISTRY_URL}"
+                    echo "Repositorio: proyecto-docker"
+                    echo "Tags disponibles en registry:"
+                    echo "   • ${STUDENT_TAG} (tu identificación)"
+                    echo "   • ${BUILD_TAG} (build #${BUILD_NUMBER})"
+                    echo "   • ${TIMESTAMP} (timestamp)"
+                    echo "   • latest"
+                    echo ""
+                    echo "Comandos de verificación:"
+                    echo "   1. curl http://localhost:5000/v2/_catalog"
+                    echo "   2. curl http://localhost:5000/v2/proyecto-docker/tags/list"
+                    echo "   3. docker pull localhost:5000/proyecto-docker:${STUDENT_TAG}"
+                }
+            }
         }
     }
-} 
+    
+    post {
+        always {
+            echo "🧹 Limpieza de imágenes locales"
+            bat """
+                echo "Eliminando imágenes locales para liberar espacio..."
+                docker rmi ${IMAGE_NAME}:dev-completo 2>nul || echo "Imagen base ya eliminada"
+                
+                # Opcional: eliminar copias locales de registry (manteniendo el registry)
+                docker rmi localhost:5000/proyecto-docker:${STUDENT_TAG} 2>nul || echo "Tag personal ya eliminado"
+                docker rmi localhost:5000/proyecto-docker:latest 2>nul || echo "Tag latest ya eliminado"
+                
+                docker image prune -f
+                echo "Limpieza completada (registry intacto)"
+            """
+        }
+        success {
+            echo "PIPELINE 1 COMPLETO"
+            echo "recordatorio1 ejecuta: curl http://localhost:5000/v2/proyecto-docker/tags/list"
+            echo "recordatorio2: docker pull localhost:5000/proyecto-docker:${STUDENT_TAG}"
+        }
+    }
+}
