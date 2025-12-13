@@ -4,7 +4,7 @@ pipeline {
     environment {
         REGISTRY_URL = 'localhost:5000'
         IMAGE_NAME = 'proyecto-docker'
-        STUDENT_TAG = 'Daniel-Arias'
+        STUDENT_TAG = 'Daniel_Arias'
         FULL_IMAGE = 'localhost:5000/proyecto-docker'
         COMPOSE_FILE = 'carpeta/proyectodocker/proyectodocker/docker-compose.yml'
         BUILD_TAG = "build-${BUILD_NUMBER}"
