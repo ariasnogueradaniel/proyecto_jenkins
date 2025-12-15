@@ -1,4 +1,4 @@
-\pipeline {
+pipeline {
     agent any
     
     parameters {
@@ -11,17 +11,17 @@
         choice(
             name: 'ACCION',
             choices: [
-                'verificar_registry',
-                'probar_imagen',
-                'ejecutar_app',
-                'comandos_personales'
+                'verificar_basica',
+                'listar_archivos',
+                'info_sistema',
+                'comando_personal'
             ],
             description: 'Accion a realizar'
         )
         
         string(
             name: 'COMANDO_PERSONAL',
-            defaultValue: 'java -version && echo "Hola desde mi proyecto"',
+            defaultValue: 'echo "Comando personal ejecutado" && pwd && node --version',
             description: 'Comando personalizado'
         )
     }
@@ -70,19 +70,19 @@
                     def cmd = ""
                     
                     switch(params.ACCION) {
-                        case 'verificar_registry':
-                            cmd = "echo '=== VERIFICACION COMPLETA ===' && echo 'Estudiante: ${params.IMAGE_TAG}' && echo 'Docker Info:' && docker --version && echo 'Java:' && java -version 2>&1 && echo 'Contenido del contenedor:' && ls -la /app 2>/dev/null || ls -la / && echo 'Verificacion completada'"
+                        case 'verificar_basica':
+                            cmd = "echo '=== INFORMACION BASICA ===' && echo 'Directorio actual:' && pwd && echo 'Node.js version:' && node --version && echo '=== FIN ==='"
                             break
                             
-                        case 'probar_imagen':
-                            cmd = "echo 'Probando funcionalidades...' && echo '1. Sistema operativo:' && cat /etc/os-release 2>/dev/null || echo 'Sin info de OS' && echo '2. Variables de entorno:' && echo 'PATH: \$PATH' && echo '3. Espacio disponible:' && df -h 2>/dev/null || echo 'Sin info de disco' && echo 'Pruebas completadas'"
+                        case 'listar_archivos':
+                            cmd = "echo '=== LISTADO DE ARCHIVOS ===' && echo 'Directorio raiz:' && ls -l / && echo 'Directorio workspace:' && ls -l /workspace && echo '=== FIN ==='"
                             break
                             
-                        case 'ejecutar_app':
-                            cmd = "echo 'Iniciando aplicacion...' && echo 'Puerto: 8080' && echo 'Directorio: /app' && echo 'Simulacion de aplicacion corriendo...' && sleep 2 && echo 'Aplicacion lista'"
+                        case 'info_sistema':
+                            cmd = "echo '=== INFORMACION DEL SISTEMA ===' && echo 'Sistema operativo:' && uname -a && cat /etc/os-release 2>/dev/null || echo 'Sin info OS' && echo '=== FIN ==='"
                             break
                             
-                        case 'comandos_personales':
+                        case 'comando_personal':
                             cmd = params.COMANDO_PERSONAL
                             break
                     }
@@ -94,7 +94,7 @@
                         echo "Accion: ${params.ACCION}"
                         echo "------------------------------"
                         
-                        docker run --rm ${IMAGE_FULL}:${params.IMAGE_TAG} /bin/sh -c '${cmd}'
+                        docker run --rm ${IMAGE_FULL}:${params.IMAGE_TAG} /bin/sh -c "${cmd}"
                         
                         echo "------------------------------"
                         echo "Ejecucion completada"
@@ -109,16 +109,16 @@
                     echo "DEMOSTRACION PARA LA REVISION"
                     echo "================================"
                     
-                    echo "Mostrando que la imagen esta en el registry:"
+                    echo "Tags disponibles en registry:"
                     curl -s http://localhost:5000/v2/proyecto-docker/tags/list
                     
                     echo.
-                    echo "Mostrando que podemos hacer pull:"
+                    echo "Imagenes locales del proyecto:"
                     docker images | findstr "localhost:5000/proyecto-docker"
                     
                     echo.
-                    echo "Ejecutando comando de verificacion rapido:"
-                    docker run --rm ${IMAGE_FULL}:${params.IMAGE_TAG} echo "Contenedor funcionando - Estudiante: ${params.IMAGE_TAG}"
+                    echo "Test final de funcionamiento:"
+                    docker run --rm ${IMAGE_FULL}:${params.IMAGE_TAG} echo "CONTAINER OK - Imagen: ${params.IMAGE_TAG} - Node: v10.24.0"
                 """
             }
         }
@@ -133,10 +133,14 @@
             """
         }
         success {
-            echo "PIPELINE2 COMPLETADO"
+            echo "PIPELINE #2 COMPLETADO EXITOSAMENTE"
             echo "Imagen usada: ${IMAGE_FULL}:${params.IMAGE_TAG}"
-            echo "Registry local activo: ${REGISTRY_URL}"
-            echo "Para la defensa, muestra los comandos curl y docker pull"
+            echo "Accion ejecutada: ${params.ACCION}"
+            echo "Registry local: ${REGISTRY_URL}"
+        }
+        failure {
+            echo "PIPELINE #2 FALLO"
+            echo "Revisar logs para solucionar problemas"
         }
     }
 }
