@@ -1,10 +1,10 @@
-pipeline {
+\pipeline {
     agent any
     
     parameters {
         choice(
             name: 'IMAGE_TAG',
-            choices: ['Daniel_Arias', 'latest', 'build-17', '20251213-111331', 'build-15', '20251213-110135'],
+            choices: ['Daniel_Arias', 'latest', 'build-17', '20251213-111331'],
             description: 'Tag de la imagen desde el registry local'
         )
         
@@ -58,12 +58,6 @@ pipeline {
                     echo "Descarga completada"
                     echo "Imagen descargada:"
                     docker images "${IMAGE_FULL}:${params.IMAGE_TAG}"
-                    
-                    echo "Informacion detallada:"
-                    for /f "tokens=*" %%i in ('docker inspect ${IMAGE_FULL}:${params.IMAGE_TAG} --format "Tag: {{index .RepoTags 0}}"') do echo %%i
-                    for /f "tokens=*" %%i in ('docker inspect ${IMAGE_FULL}:${params.IMAGE_TAG} --format "Creada: {{.Created}}"') do echo %%i
-                    for /f "tokens=*" %%i in ('docker inspect ${IMAGE_FULL}:${params.IMAGE_TAG} --format "ID: {{slice .Id 7 19}}"') do echo %%i
-                    for /f "tokens=*" %%i in ('docker inspect ${IMAGE_FULL}:${params.IMAGE_TAG} --format "Tamano: {{.Size}} bytes"') do echo %%i
                 """
             }
         }
@@ -77,41 +71,15 @@ pipeline {
                     
                     switch(params.ACCION) {
                         case 'verificar_registry':
-                            cmd = """
-                                echo "=== VERIFICACION COMPLETA ==="
-                                echo "Estudiante: ${params.IMAGE_TAG}"
-                                echo "Docker Info:"
-                                docker --version
-                                echo "Java:"
-                                java -version 2>&1
-                                echo "Contenido del contenedor:"
-                                ls -la /app 2>/dev/null || ls -la /
-                                echo "Verificacion completada"
-                            """
+                            cmd = "echo '=== VERIFICACION COMPLETA ===' && echo 'Estudiante: ${params.IMAGE_TAG}' && echo 'Docker Info:' && docker --version && echo 'Java:' && java -version 2>&1 && echo 'Contenido del contenedor:' && ls -la /app 2>/dev/null || ls -la / && echo 'Verificacion completada'"
                             break
                             
                         case 'probar_imagen':
-                            cmd = """
-                                echo "Probando funcionalidades..."
-                                echo "1. Sistema operativo:"
-                                cat /etc/os-release 2>/dev/null || echo "Sin info de OS"
-                                echo "2. Variables de entorno:"
-                                echo "PATH: \$PATH"
-                                echo "3. Espacio disponible:"
-                                df -h 2>/dev/null || echo "Sin info de disco"
-                                echo "Pruebas completadas"
-                            """
+                            cmd = "echo 'Probando funcionalidades...' && echo '1. Sistema operativo:' && cat /etc/os-release 2>/dev/null || echo 'Sin info de OS' && echo '2. Variables de entorno:' && echo 'PATH: \$PATH' && echo '3. Espacio disponible:' && df -h 2>/dev/null || echo 'Sin info de disco' && echo 'Pruebas completadas'"
                             break
                             
                         case 'ejecutar_app':
-                            cmd = """
-                                echo "Iniciando aplicacion..."
-                                echo "Puerto: 8080"
-                                echo "Directorio: /app"
-                                echo "Simulacion de aplicacion corriendo..."
-                                sleep 2
-                                echo "Aplicacion lista"
-                            """
+                            cmd = "echo 'Iniciando aplicacion...' && echo 'Puerto: 8080' && echo 'Directorio: /app' && echo 'Simulacion de aplicacion corriendo...' && sleep 2 && echo 'Aplicacion lista'"
                             break
                             
                         case 'comandos_personales':
@@ -126,7 +94,7 @@ pipeline {
                         echo "Accion: ${params.ACCION}"
                         echo "------------------------------"
                         
-                        docker run --rm ${IMAGE_FULL}:${params.IMAGE_TAG} /bin/sh -c "${cmd}"
+                        docker run --rm ${IMAGE_FULL}:${params.IMAGE_TAG} /bin/sh -c '${cmd}'
                         
                         echo "------------------------------"
                         echo "Ejecucion completada"
@@ -137,23 +105,21 @@ pipeline {
         
         stage('Demostracion para Revision') {
             steps {
-                script {
+                bat """
                     echo "DEMOSTRACION PARA LA REVISION"
                     echo "================================"
                     
-                    bat """
-                        echo "Mostrando que la imagen esta en el registry:"
-                        curl -s http://localhost:5000/v2/proyecto-docker/tags/list
-                        
-                        echo.
-                        echo "Mostrando que podemos hacer pull:"
-                        docker images | findstr "localhost:5000/proyecto-docker"
-                        
-                        echo.
-                        echo "Ejecutando comando de verificacion rapido:"
-                        docker run --rm ${IMAGE_FULL}:${params.IMAGE_TAG} echo "Contenedor funcionando - Estudiante: ${params.IMAGE_TAG}"
-                    """
-                }
+                    echo "Mostrando que la imagen esta en el registry:"
+                    curl -s http://localhost:5000/v2/proyecto-docker/tags/list
+                    
+                    echo.
+                    echo "Mostrando que podemos hacer pull:"
+                    docker images | findstr "localhost:5000/proyecto-docker"
+                    
+                    echo.
+                    echo "Ejecutando comando de verificacion rapido:"
+                    docker run --rm ${IMAGE_FULL}:${params.IMAGE_TAG} echo "Contenedor funcionando - Estudiante: ${params.IMAGE_TAG}"
+                """
             }
         }
     }
