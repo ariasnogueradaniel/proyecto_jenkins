@@ -108,10 +108,10 @@ pipeline {
             }
         }
         
-        stage('Demostracion para Revision') {
+        stage('Demostracion') {
             steps {
                 bat """
-                    echo "DEMOSTRACION PARA LA REVISION"
+                    echo "DEMOSTRACION"
                     echo "================================"
                     
                     echo "Tags disponibles en registry:"
