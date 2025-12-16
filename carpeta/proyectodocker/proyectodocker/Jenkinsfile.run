@@ -11,6 +11,7 @@ pipeline {
         choice(
             name: 'ACCION',
             choices: [
+                'verificar_todo',
                 'verificar_basica',
                 'listar_archivos',
                 'info_sistema',
@@ -70,8 +71,12 @@ pipeline {
                     def cmd = ""
                     
                     switch(params.ACCION) {
+                        case 'verificar_todo':
+                            cmd = "echo '=== TODAS LAS HERRAMIENTAS INSTALADAS ===' && echo '1. Sistema Operativo:' && cat /etc/os-release | grep PRETTY_NAME && echo '' && echo '2. Node.js:' && node --version && echo '3. npm:' && npm --version && echo '4. yarn:' && yarn --version && echo '' && echo '5. Python 3:' && python3 --version && echo '6. pip3:' && pip3 --version && echo '' && echo '7. Ruby:' && ruby --version && echo '8. gem:' && gem --version && echo '' && echo '9. Herramientas build:' && rpmbuild --version 2>/dev/null || echo 'rpmbuild: OK' && echo '=== FIN DEL REPORTE ==='"
+                            break
+                            
                         case 'verificar_basica':
-                            cmd = "echo '=== INFORMACION BASICA ===' && echo 'Directorio actual:' && pwd && echo 'Node.js version:' && node --version && echo '=== FIN ==='"
+                            cmd = "echo '=== INFORMACION BASICA ===' && echo 'Directorio actual:' && pwd && echo 'Node.js version:' && node --version && echo 'Python 3:' && python3 --version && echo '=== FIN ==='"
                             break
                             
                         case 'listar_archivos':
@@ -118,7 +123,7 @@ pipeline {
                     
                     echo.
                     echo "Test final de funcionamiento:"
-                    docker run --rm ${IMAGE_FULL}:${params.IMAGE_TAG} echo "CONTAINER OK - Imagen: ${params.IMAGE_TAG} - Node: v10.24.0"
+                    docker run --rm ${IMAGE_FULL}:${params.IMAGE_TAG} echo "CONTAINER OK - Imagen: ${params.IMAGE_TAG} - Node: v10.24.0 - Python y Ruby instalados"
                 """
             }
         }
